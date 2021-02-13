@@ -5,6 +5,9 @@ using UnityEngine;
 public class CameraController : MonoBehaviour
 {
     public Transform target;
+    public Transform targetLeft;
+    public Transform targetRight;
+    public Transform targetBehind;
     public float distance = 5.0f;
     public float height = 0;
     public float damping = 5.0f;
@@ -13,6 +16,20 @@ public class CameraController : MonoBehaviour
     public float rotationDamping = 10.0f;
 
     void Update (){
+        if (Input.GetKey(KeyCode.Backslash)){
+            followBehind = false;
+        }
+        else if (Input.GetKey(KeyCode.LeftBracket)) {
+            target = targetLeft;
+        }
+        else if (Input.GetKey(KeyCode.RightBracket)){
+            target = targetRight;
+        }
+        else {
+            followBehind = true;
+            target = targetBehind;
+        }
+
         Vector3 wantedPosition;
         if(!followBehind)
         wantedPosition = target.TransformPoint(0, height, -distance);
