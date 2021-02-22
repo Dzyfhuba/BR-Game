@@ -1,53 +1,74 @@
-﻿using System.Collections;
+﻿using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 
-[System.Serializable]
-public class AxleInfo {
-    public WheelCollider leftWheel;
-    public WheelCollider rightWheel;
-    public bool motor;
-    public bool steering;
-}
 public class CarController : MonoBehaviour
 {
-    public List<AxleInfo> axleInfos; 
-    public float maxMotorTorque;
-    public float maxSteeringAngle;
-    // finds the corresponding visual wheel
-    // correctly applies the transform
-    public void ApplyLocalPositionToVisuals(WheelCollider collider)
+    //If you do not use center of mass the wheels base it off of the colliders
+    //By using center of mass you can control where it is.
+    public Transform t_CenterOfMass;
+
+    //The maximum amount of power put out by each wheel.
+    public float maxTorque = 500f;
+
+    //The max distance a wheel can turn.
+    public float maxSteerAngle = 45f;
+
+    //Each wheel needs its own mesh
+    public Transform[] wheelMesh = new Transform[4];
+
+    //The physics of the wheels, max 20 axels.
+    //WheelCollider[4] 4 is how many wheels we have.
+    public WheelCollider[] wheelCollider = new WheelCollider[4];
+
+    //Ridged body accessor.
+    private Rigidbody r_Ridgedbody;
+
+    public void Start()
     {
-        if (collider.transform.childCount == 0) {
-            return;
-        }
-     
-        Transform visualWheel = collider.transform.GetChild(0);
-     
-        Vector3 position;
-        Quaternion rotation;
-        collider.GetWorldPose(out position, out rotation);
-     
-        visualWheel.transform.position = position;
-        visualWheel.transform.rotation = rotation;
+        // This sets where the center of mass is, if you look r_Ridgedbody."centerOfMass" is a function of ridged body.
+        r_Ridgedbody = GetComponent<Rigidbody>();
+        r_Ridgedbody.centerOfMass = t_CenterOfMass.localPosition;
     }
-     
+
+    public void Update()
+    {
+        //Sets the wheel meshs to match the rotation of the physics WheelCollider.
+        UpdateMeshPosition();
+    }
+
     public void FixedUpdate()
     {
-        float motor = maxMotorTorque * -Input.GetAxis("Vertical");
-        float steering = maxSteeringAngle * Input.GetAxis("Horizontal");
-     
-        foreach (AxleInfo axleInfo in axleInfos) {
-            if (axleInfo.steering) {
-                axleInfo.leftWheel.steerAngle = steering;
-                axleInfo.rightWheel.steerAngle = steering;
-            }
-            if (axleInfo.motor) {
-                axleInfo.leftWheel.motorTorque = motor;
-                axleInfo.rightWheel.motorTorque = motor;
-            }
-            ApplyLocalPositionToVisuals(axleInfo.leftWheel);
-            ApplyLocalPositionToVisuals(axleInfo.rightWheel);
+        //Turn the wheels to a set max, with an input.
+        float steer = Input.GetAxis("Horizontal") * maxSteerAngle;
+        //Move forward or backwards based on the maxTorque, with an input.
+        float torque = Input.GetAxis("Vertical") * maxTorque;
+
+        //Sets which wheels turn, this is the two front wheels.
+        wheelCollider[0].steerAngle = steer;
+        wheelCollider[1].steerAngle = steer;
+
+        //Sets which wheels move forward or backwards.
+        for (int i = 0; i < 4; i++)
+        {
+            wheelCollider[i].motorTorque = torque;
+        }
+    }
+
+    //Sets each wheel to move with the physics WheelColliders.
+    public void UpdateMeshPosition()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            Quaternion quat;
+            Vector3 pos;
+
+            //Gets the current position of the physics WheelColliders.
+            wheelCollider[i].GetWorldPose(out pos, out quat);
+
+            ///Sets the mesh to match the position and rotation of the physics WheelColliders.
+            wheelMesh[i].position = pos;
+            wheelMesh[i].rotation = quat;
         }
     }
 }
